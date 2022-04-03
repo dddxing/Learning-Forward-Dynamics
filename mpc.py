@@ -1,4 +1,5 @@
 import sys
+from turtle import pos
 import numpy as np
 from arm_dynamics_teacher import ArmDynamicsTeacher
 from arm_dynamics_student import ArmDynamicsStudent
@@ -8,19 +9,90 @@ import argparse
 import time
 import math
 import torch
+import random
+import copy
+
+
 np.set_printoptions(suppress=True)
 
 class MPC:
 
     def __init__(self,):
-        self.control_horizon = 10
+        self.control_horizon = 20 # H
+        self.planning_horizon = 85 # N
+        self.learning_rate = 0.4
         # Define other parameters here
+
+    def cost_function(self, dynamics, traj, goal, action):
+        cost =[]
+
+        for i in range(len(traj)):
+            pos_ee = dynamics.compute_fk(traj[i])
+            loss = np.linalg.norm(goal - pos_ee)
+            # print(f"loss, {loss}")
+            cost.append(loss)
+        # print(cost) 
+        # return np.linalg.norm(goal - dynamics.compute_fk(traj[0]))
+        return sum(cost) #+ 0.5 * np.sum(action)
+    
+    def roll_out_seq(self, dynamics, init_state, action):
+        X_k = [init_state]
+        N = self.planning_horizon
+        for i in range(N-1):
+            next_state = dynamics.advance(X_k[i], action)
+            X_k.append(next_state)
+        return X_k
+
 
     def compute_action(self, dynamics, state, goal, action):
         # Put your code here. You must return an array of shape (num_links, 1)
+        # Initialization
+        du = self.learning_rate
+        dU = [du, -du]
+              
 
+        N = self.planning_horizon
+        H = self.control_horizon
+        num_links = dynamics.get_num_links()
+        u_k = action.copy()
+        x_k = state.copy()
+        u_star = action.copy()
+        
+        # Roll out the trajectory 
+        X_k = self.roll_out_seq(dynamics, x_k, u_k)
+        
+        # compute the cost of the trajectory and action
+        # init_cost = self.cost_function(dynamics, X_k, goal, u_k)
+
+        for n in range(num_links):
+            cost_record = np.zeros(2)
+            init_cost = self.cost_function(dynamics, X_k, goal, u_k)
+            while 1:
+                for i in range(len(dU)):
+                    u_k[n] = u_star[n] + dU[i]
+                    X_k = self.roll_out_seq(dynamics, x_k, u_k)
+                    new_cost = self.cost_function(dynamics, X_k, goal, u_k)
+                    cost_record[i] = new_cost
+
+                best_cost = np.min(cost_record)
+                best_idx = np.argmin(cost_record)
+                
+                if best_cost < init_cost:
+                    init_cost = best_cost
+                    u_star[n] = u_star[n] + dU[best_idx]
+                else:
+                    # print(2)
+                    break
+
+        return u_star
+                
+
+                
+        
+        return np.ones(num_links)
         # Don't forget to comment out the line below
-        raise NotImplementedError("MPC not implemented")
+        # raise NotImplementedError("compute_action not implemented")
+
 
 
 
@@ -56,6 +128,7 @@ def main(args):
             joint_viscous_friction=args.friction,
             dt=args.time_step,
         )
+
 
     # Controller
     controller = MPC()
@@ -105,3 +178,4 @@ def get_args():
 
 if __name__ == "__main__":
     main(get_args())
+

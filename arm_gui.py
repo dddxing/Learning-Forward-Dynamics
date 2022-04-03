@@ -88,6 +88,8 @@ class ArmGUI(object):
             robot_length += link_lengths[i]
         plt.ylim(- 1.1 * robot_length, 1.1 * robot_length)
         plt.xlim(- 1.1 * robot_length, 1.1 * robot_length)
+        # plt.ylim(- 1.5 * robot_length, 1.5 * robot_length)
+        # plt.xlim(- 1.5 * robot_length, 1.5 * robot_length)        
 
         for i in range(0, num_links):
             R = np.dot(R, rot(q[i]))

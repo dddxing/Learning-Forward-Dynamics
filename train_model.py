@@ -15,7 +15,7 @@ np.set_printoptions(suppress=True)
 
 class DynamicDataset(Dataset):
     def __init__(self, dataset_dir):
-        # X: (N, 9), Y: (N, 6)
+        # X: (N, 3), Y: (N, 6)
         self.X = np.load(os.path.join(dataset_dir, 'X.npy')).T.astype(np.float32)
         self.Y = np.load(os.path.join(dataset_dir, 'Y.npy')).T.astype(np.float32)
 
