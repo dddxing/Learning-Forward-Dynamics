@@ -60,9 +60,6 @@ class MPC:
         
         # Roll out the trajectory 
         X_k = self.roll_out_seq(dynamics, x_k, u_k)
-        
-        # compute the cost of the trajectory and action
-        # init_cost = self.cost_function(dynamics, X_k, goal, u_k)
 
         for n in range(num_links):
             cost_record = np.zeros(2)
@@ -85,15 +82,6 @@ class MPC:
                     break
 
         return u_star
-                
-
-                
-        
-        return np.ones(num_links)
-        # Don't forget to comment out the line below
-        # raise NotImplementedError("compute_action not implemented")
-
-
 
 
 def main(args):
