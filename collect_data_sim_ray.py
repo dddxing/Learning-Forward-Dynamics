@@ -13,6 +13,7 @@ np.set_printoptions(suppress=True)
 
 def simulate():
     # Controller
+
     X = []
     Y = []
     controller = MPC()
@@ -20,7 +21,9 @@ def simulate():
     action = np.zeros((arm.dynamics.get_action_dim(), 1))
     goal = np.zeros((2, 1))
 
-    xgoal = np.random.uniform(-0.7*dynamics.num_links*dynamics.link_length, 0.7*dynamics.num_links*dynamics.link_length)
+    left = np.random.uniform(-0.7*dynamics.num_links*dynamics.link_length, -0.2*dynamics.num_links*dynamics.link_length)
+    right = np.random.uniform(0.2*dynamics.num_links*dynamics.link_length, -0.7*dynamics.num_links*dynamics.link_length)
+    xgoal = np.random.choice([left, right])
     ygoal = np.random.uniform(-dynamics.link_length, -0.7*dynamics.num_links*dynamics.link_length)
     goal[0, 0] = xgoal
     goal[1, 0] = ygoal
@@ -28,23 +31,37 @@ def simulate():
     print(goal)
 
     dt = args.time_step
-    timer = 3
+    timer = 0.65
 
     while arm.get_t() < timer:
 
+        # t = time.time()
+        
+        # time.sleep(max(0, dt - (time.time() - t)))
+        # state = arm.get_state()
+        # # print(state)
+        # action = controller.compute_action(dynamics, state, goal, action)
+        # x = np.concatenate((state, action), axis=None)
+        # X.append(x)
+        # # print(action)
+        # # arm.advance()
+        # arm.set_action(action)
+        # arm.advance()
+        # k = 0
+        # next_state = arm.get_state()
+        # Y.append(next_state)
+
         t = time.time()
         
-        time.sleep(max(0, dt - (time.time() - t)))
+        # time.sleep(max(0, dt - (time.time() - t)))
         state = arm.get_state()
         # print(state)
         action = controller.compute_action(dynamics, state, goal, action)
         x = np.concatenate((state, action), axis=None)
         X.append(x)
-        # print(action)
-        # arm.advance()
-        arm.set_action(action)
         arm.advance()
-        k = 0
+        # print(action)
+        arm.set_action(action)
         next_state = arm.get_state()
         Y.append(next_state)
 
@@ -88,10 +105,7 @@ if __name__ == '__main__':
     # ---
     
     simulate_remote = ray.remote(simulate)
-    # futures = [simulate_remote.remote() for i in range(100)]
-    futures = []
-    for i in tqdm.tqdm(range(100)):
-        futures.append(simulate_remote.remote())
+    futures = [simulate_remote.remote() for i in range(300)]
     res = ray.get(futures)
 
     X = []
